@@ -1,0 +1,25 @@
+FROM golang:1.22 AS builder
+
+WORKDIR /app
+COPY terraform-provider-localmeta/ ./terraform-provider-localmeta/
+
+WORKDIR /app/terraform-provider-localmeta
+
+RUN [ ! -f go.mod ] && go mod init local/localmeta || true
+RUN go mod tidy && go build -o terraform-provider-localmeta
+
+
+FROM hashicorp/terraform:1.9.5
+
+ENV TF_PLUGIN_CACHE_DIR=/root/.terraform.d/plugin-cache
+WORKDIR /workspace
+
+RUN mkdir -p /root/.terraform.d/plugin-cache
+COPY --from=builder /app/terraform-provider-localmeta/terraform-provider-localmeta \
+    /root/.terraform.d/plugins/local/localmeta/1.0.0/linux_amd64/terraform-provider-localmeta
+
+# Copy CLI configuration
+COPY terraformrc /root/.terraformrc
+COPY terraformrc /root/.terraform.d/.terraformrc
+
+ENTRYPOINT ["/bin/sh", "-c", "while true; do sleep 3600; done"]
