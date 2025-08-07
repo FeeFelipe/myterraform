@@ -1,183 +1,151 @@
-# myterraform
+# Terraform + LocalStack + Nomad + Custom Provider (localmeta)
 
-I should to use docker to orchestrate the Nomad because my Mac is 2012 and doent support the new OS version, so I need to run the Nomad from the container
+This project demonstrates a **local development environment** for AWS using **LocalStack**, **Nomad**, and **Terraform** with a **custom Terraform provider** that generates local JSON metadata.
 
+---
 
-aws --endpoint-url=http://localhost:4566 s3 ls
-aws --endpoint-url=http://localhost:4566 sqs list-queues
-aws --endpoint-url=http://localhost:4566 dynamodb list-tables
+## Project Structure
 
-
-Terraform + LocalStack use case is to simulate AWS S3 and SQS locally for development/testing, without spending money on AWS.
-
-I’ll create a self-contained Terraform module that:
-
-Creates an S3 bucket
-
-Creates an SQS queue
-
-Creates an IAM user with permissions for these resources
-
-Works fully on LocalStack
-
-
-
-docker exec -it terraform sh
-
-terraform init
-terraform plan -var-file=dev.tfvars
-terraform apply -auto-approve -var-file=dev.tfvars
-
-
-
-
-
-
-Local AWS Environment with Nomad, LocalStack, Terraform, and AWS CLI
-This project provides a fully local AWS development environment using:
-
-Nomad – Lightweight container orchestrator
-
-LocalStack – AWS services emulator
-
-Terraform – Infrastructure as Code for AWS resources
-
-AWS CLI – For testing AWS services locally
-
-It is designed to develop and test cloud-native applications locally without incurring AWS costs.
-
-Features
-🐳 Docker Compose environment with:
-
-Nomad in dev mode (single node)
-
-LocalStack with S3, SQS, DynamoDB
-
-AWS CLI container for local testing
-
-Terraform container for infrastructure automation
-
-✅ Persistent LocalStack storage
-
-✅ Preconfigured dummy AWS credentials (test/test)
-
-✅ Modular Terraform setup for S3, SQS, IAM user
-
-Project Structure
-bash
-Copiar
-Editar
+```
 .
-├─ docker-compose.yml        # Defines Nomad, LocalStack, Terraform, AWS CLI
-├─ jobs/                     # Example Nomad jobs
-├─ init/                     # Scripts auto-executed by LocalStack
-├─ localstack-data/          # Persistent LocalStack data
-├─ aws/credentials           # Dummy AWS credentials
-└─ terraform-localstack/     # Terraform configuration
-├─ main.tf
-├─ providers.tf
-├─ variables.tf
-├─ outputs.tf
-├─ dev.tfvars
-└─ modules/
-├─ s3/
-├─ sqs/
-└─ iam-user/
-1️⃣ Start the Environment
-Start all services in the background:
+├─ docker-compose.yml                # Local environment orchestration
+├─ Dockerfile.terraform               # Multi-stage build for Terraform + provider
+├─ jobs/                              # Nomad jobs (example)
+├─ init/                              # LocalStack init scripts
+├─ localstack-data/                   # LocalStack persistent data
+├─ aws/                               # AWS CLI config for LocalStack
+├─ terraform-localstack/              # Terraform project
+│  ├─ main.tf
+│  ├─ providers.tf
+│  ├─ variables.tf
+│  ├─ outputs.tf
+│  ├─ dev.tfvars
+│  └─ modules/
+│      ├─ s3/
+│      ├─ sqs/
+│      └─ iam-user/
+└─ terraform-provider-localmeta/      # Custom Terraform provider (Go)
+   ├─ main.go
+   ├─ provider.go
+   ├─ resource_bucketmeta.go
+   └─ go.mod
+```
 
-bash
-Copiar
-Editar
-docker compose up -d
-Check running containers:
+---
 
-bash
-Copiar
-Editar
-docker ps
-Access:
+## Components
 
-Nomad UI: http://localhost:4646
+- **Nomad**: Orchestrator for local jobs (optional in this demo)
+- **LocalStack**: Simulates AWS services (S3, SQS, DynamoDB)
+- **AWS CLI**: Interact with LocalStack endpoints
+- **Terraform**: Provision resources locally
+- **Local Provider (`localmeta`)**: Generates JSON metadata for S3 buckets
 
-LocalStack endpoint: http://localhost:4566
+---
 
-2️⃣ Test AWS CLI
-The AWS CLI container comes pre-configured with dummy credentials.
-Enter the container:
+## Getting Started
 
-bash
-Copiar
-Editar
-docker exec -it awscli bash
-List all S3 buckets in LocalStack:
+###  Build and start environment
 
-bash
-Copiar
-Editar
-aws --endpoint-url=http://localstack:4566 s3 ls
-Create a bucket and a queue:
+```bash
+docker compose up -d --build
+```
 
-bash
-Copiar
-Editar
-aws --endpoint-url=http://localstack:4566 s3 mb s3://my-local-bucket
-aws --endpoint-url=http://localstack:4566 sqs create-queue --queue-name my-local-queue
-3️⃣ Use Terraform for Local AWS Resources
-Enter the Terraform container:
+This will:
 
-bash
-Copiar
-Editar
+1. Compile the custom Terraform provider.
+2. Start:
+    - Nomad
+    - LocalStack
+    - AWS CLI container
+    - Terraform container
+
+---
+
+### Access the Terraform container
+
+```bash
 docker exec -it terraform sh
-Initialize the Terraform project:
+```
 
-bash
-Copiar
-Editar
+---
+
+### Initialize Terraform
+
+Inside the container:
+
+```bash
 terraform init
-Preview changes with your dev environment variables:
-
-bash
-Copiar
-Editar
 terraform plan -var-file=dev.tfvars
-Apply changes to LocalStack:
-
-bash
-Copiar
-Editar
 terraform apply -auto-approve -var-file=dev.tfvars
-Verify resources with AWS CLI:
+```
 
-bash
-Copiar
-Editar
+---
+
+### Verify Resources
+
+- **LocalStack** Web UI: [http://localhost:4566](http://localhost:4566)
+- **List S3 buckets**:
+
+```bash
 aws --endpoint-url=http://localstack:4566 s3 ls
-aws --endpoint-url=http://localstack:4566 sqs list-queues
-aws --endpoint-url=http://localstack:4566 iam list-users
-4️⃣ Example Terraform Modules
-This project includes modular Terraform code to provision:
+```
 
-S3 bucket
+- **Check generated metadata file** (from custom provider):
 
-SQS queue
+```bash
+/workspace/<bucket_name>.json
+```
 
-IAM user with S3/SQS access
+Example:
 
-Modules are reusable and environment-aware via .tfvars files.
+```json
+{
+  "bucket_name": "my-dev-bucket",
+  "tags": {
+    "Environment": "local",
+    "Project": "demo"
+  }
+}
+```
 
-5️⃣ Stop the Environment
-To stop and remove all containers:
+---
 
-bash
-Copiar
-Editar
-docker compose down
-To remove persistent LocalStack data:
+## Custom Terraform Provider
 
-bash
-Copiar
-Editar
+- Path: `terraform-provider-localmeta/`
+- Module name: `local/localmeta`
+- Example usage in Terraform:
+
+```hcl
+provider "localmeta" {}
+
+resource "localmeta_bucket" "metadata" {
+  bucket_name = module.s3.bucket_name
+  tags        = var.default_tags
+}
+```
+
+When applied, this creates a `<bucket_name>.json` file with the tags and bucket name.
+
+---
+
+## Clean up
+
+```bash
+terraform destroy -auto-approve -var-file=dev.tfvars
 docker compose down -v
-rm -rf localstack-data
+```
+
+---
+
+## Notes
+
+- Compatible with **Terraform 1.9.x**
+- Custom provider automatically compiled in Docker build
+- All AWS calls point to **LocalStack** (no real AWS charges)
+
+---
+
+**Author:** Felipe Cavalieri
+**License:** MIT
