@@ -6,6 +6,7 @@ terraform {
     }
     localmeta = {
       source  = "local/localmeta"
+      version = "1.0.0"
     }
   }
 }
@@ -28,13 +29,14 @@ module "iam_user" {
   tags      = var.default_tags
 }
 
-# --------------------------
-# Custom Provider: Local Metadata
-# --------------------------
+provider "localmeta" {
+  output_dir = "./output"
+}
 
-provider "localmeta" {}
-
-resource "localmeta_bucket" "metadata" {
-  bucket_name = module.s3.bucket_name
-  tags        = var.default_tags
+resource "localmeta_bucket" "example" {
+  bucket_name = "my-bucket"
+  tags = {
+    team = "infra"
+    env  = "dev"
+  }
 }
