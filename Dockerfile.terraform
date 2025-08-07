@@ -2,11 +2,11 @@ FROM golang:1.23 AS builder
 
 WORKDIR /app/terraform-provider-localmeta
 COPY terraform-provider-localmeta/ ./
+
 RUN if [ ! -f go.mod ]; then go mod init local/localmeta; fi
 RUN go mod tidy && \
-    go build -o terraform-provider-localmeta && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o terraform-provider-localmeta && \
     chmod +x terraform-provider-localmeta
-
 
 FROM hashicorp/terraform:1.9.5
 
@@ -15,15 +15,13 @@ ENV TF_LOG=DEBUG
 
 WORKDIR /workspace
 
-RUN mkdir -p /root/.terraform.d/plugins/local/localmeta/1.0.0/linux_amd64 && \
+RUN mkdir -p /root/.terraform.d/plugins/registry.terraform.io/local/localmeta/1.0.0/linux_amd64 && \
     mkdir -p ${TF_PLUGIN_CACHE_DIR}
 
 COPY --from=builder /app/terraform-provider-localmeta/terraform-provider-localmeta \
-    /root/.terraform.d/plugins/local/localmeta/1.0.0/linux_amd64/terraform-provider-localmeta
-COPY terraformrc /root/.terraformrc
+    /root/.terraform.d/plugins/registry.terraform.io/local/localmeta/1.0.0/linux_amd64/terraform-provider-localmeta
 
-RUN ls -la /root/.terraform.d/plugins/local/localmeta/1.0.0/linux_amd64/ && \
-    test -x /root/.terraform.d/plugins/local/localmeta/1.0.0/linux_amd64/terraform-provider-localmeta || \
-    (echo "Provider binary is not executable" && exit 1)
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-ENTRYPOINT ["/bin/sh", "-c", "while true; do sleep 3600; done"]
+ENTRYPOINT ["/entrypoint.sh"]

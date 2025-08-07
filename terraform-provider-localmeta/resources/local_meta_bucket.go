@@ -33,6 +33,7 @@ func ResourceLocalMetaBucket() *schema.Resource {
 			"tags": {
 				Type:        schema.TypeMap,
 				Optional:    true,
+				ForceNew:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 				Description: "Tags associated with the bucket",
 			},

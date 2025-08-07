@@ -4,6 +4,7 @@ provider "aws" {
   secret_key                  = "test"
   skip_credentials_validation = true
   skip_metadata_api_check     = true
+  s3_use_path_style           = true
 
   endpoints {
     s3  = var.localstack_endpoint
@@ -14,6 +15,4 @@ provider "aws" {
   default_tags {
     tags = var.default_tags
   }
-
-  s3_use_path_style = true
 }

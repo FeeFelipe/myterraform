@@ -23,7 +23,6 @@ services:
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - AWS_DEFAULT_REGION=us-east-1
-      - EDGE_PORT=4566
     ports:
       - "4566:4566"
       - "4510-4559:4510-4559"
@@ -48,7 +47,7 @@ services:
     working_dir: /workspace
     volumes:
       - ./terraform-localstack:/workspace
-    entrypoint: ["/bin/sh", "-c", "while true; do sleep 3600; done"]
+    entrypoint: ["/entrypoint.sh"]
 
 networks:
   project-net:

@@ -9,34 +9,22 @@ terraform {
       version = "1.0.0"
     }
   }
-}
 
-module "s3" {
-  source      = "./modules/s3"
-  bucket_name = var.bucket_name
-  tags        = var.default_tags
-}
-
-module "sqs" {
-  source     = "./modules/sqs"
-  queue_name = var.queue_name
-  tags       = var.default_tags
-}
-
-module "iam_user" {
-  source    = "./modules/iam-user"
-  user_name = var.user_name
-  tags      = var.default_tags
+  required_version = ">= 1.5"
 }
 
 provider "localmeta" {
   output_dir = "./output"
 }
 
+module "sqs" {
+  source     = "./modules/sqs"
+  for_each   = var.sqs_queues
+  queue_name = each.key
+  tags       = merge(var.default_tags, each.value)
+}
+
 resource "localmeta_bucket" "example" {
-  bucket_name = "my-bucket"
-  tags = {
-    team = "infra"
-    env  = "dev"
-  }
+  bucket_name = var.bucket_name
+  tags        = var.default_tags
 }
