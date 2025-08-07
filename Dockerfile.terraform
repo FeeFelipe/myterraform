@@ -21,7 +21,11 @@ RUN mkdir -p /root/.terraform.d/plugins/registry.terraform.io/local/localmeta/1.
 COPY --from=builder /app/terraform-provider-localmeta/terraform-provider-localmeta \
     /root/.terraform.d/plugins/registry.terraform.io/local/localmeta/1.0.0/linux_amd64/terraform-provider-localmeta
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY terraformrc /root/.terraformrc
+COPY terraform-localstack/ /workspace/
 
-ENTRYPOINT ["/entrypoint.sh"]
+RUN ls -la /root/.terraform.d/plugins/registry.terraform.io/local/localmeta/1.0.0/linux_amd64/ && \
+    test -x /root/.terraform.d/plugins/registry.terraform.io/local/localmeta/1.0.0/linux_amd64/terraform-provider-localmeta || \
+    (echo "Provider binary is not executable" && exit 1)
+
+ENTRYPOINT ["/bin/sh"]

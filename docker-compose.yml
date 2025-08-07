@@ -46,8 +46,9 @@ services:
       - AWS_DEFAULT_REGION=us-east-1
     working_dir: /workspace
     volumes:
-      - ./terraform-localstack:/workspace
-    entrypoint: ["/entrypoint.sh"]
+      - ./terraform-localstack:/workspace:rw
+    stdin_open: true
+    tty: true
 
 networks:
   project-net:
