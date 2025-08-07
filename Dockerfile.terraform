@@ -1,4 +1,4 @@
-FROM golang:1.23 AS builder
+FROM golang:1.23 AS builder-provider
 
 WORKDIR /app/terraform-provider-localmeta
 COPY terraform-provider-localmeta/ ./
@@ -8,24 +8,50 @@ RUN go mod tidy && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o terraform-provider-localmeta && \
     chmod +x terraform-provider-localmeta
 
-FROM hashicorp/terraform:1.9.5
 
+FROM golang:1.23 AS builder-vault
+
+WORKDIR /app/vault-plugin-myengine
+COPY vault-plugin-myengine/ ./
+
+RUN if [ ! -f go.mod ]; then go mod init local/vault-plugin-myengine; fi
+RUN go mod tidy && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o vault-plugin-myengine && \
+    chmod +x vault-plugin-myengine
+
+
+FROM ubuntu:22.04
+
+ENV TF_VERSION=1.9.5
+ENV VAULT_VERSION=1.15.5
 ENV TF_PLUGIN_CACHE_DIR=/root/.terraform.d/plugin-cache
 ENV TF_LOG=DEBUG
 
-WORKDIR /workspace
+RUN apt-get update && apt-get install -y unzip curl && \
+    curl -fsSL https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip -o terraform.zip && \
+    curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip -o vault.zip && \
+    unzip terraform.zip -d /usr/local/bin && \
+    unzip vault.zip -d /usr/local/bin && \
+    chmod +x /usr/local/bin/terraform /usr/local/bin/vault && \
+    rm -f terraform.zip vault.zip
 
-RUN mkdir -p /root/.terraform.d/plugins/registry.terraform.io/local/localmeta/1.0.0/linux_amd64 && \
-    mkdir -p ${TF_PLUGIN_CACHE_DIR}
+RUN mkdir -p \
+    /workspace \
+    /root/.terraform.d/plugins/registry.terraform.io/local/localmeta/1.0.0/linux_amd64 \
+    /etc/vault/plugins \
+    ${TF_PLUGIN_CACHE_DIR}
 
-COPY --from=builder /app/terraform-provider-localmeta/terraform-provider-localmeta \
+COPY --from=builder-provider /app/terraform-provider-localmeta/terraform-provider-localmeta \
     /root/.terraform.d/plugins/registry.terraform.io/local/localmeta/1.0.0/linux_amd64/terraform-provider-localmeta
+
+COPY --from=builder-vault /app/vault-plugin-myengine/vault-plugin-myengine \
+    /etc/vault/plugins/vault-plugin-myengine
 
 COPY terraformrc /root/.terraformrc
 COPY terraform-localstack/ /workspace/
 
-RUN ls -la /root/.terraform.d/plugins/registry.terraform.io/local/localmeta/1.0.0/linux_amd64/ && \
-    test -x /root/.terraform.d/plugins/registry.terraform.io/local/localmeta/1.0.0/linux_amd64/terraform-provider-localmeta || \
-    (echo "Provider binary is not executable" && exit 1)
+RUN test -x /root/.terraform.d/plugins/registry.terraform.io/local/localmeta/1.0.0/linux_amd64/terraform-provider-localmeta || (echo "Terraform provider build failed" && exit 1) && \
+    test -x /etc/vault/plugins/vault-plugin-myengine || (echo "Vault plugin build failed" && exit 1)
 
+WORKDIR /workspace
 ENTRYPOINT ["/bin/sh"]
