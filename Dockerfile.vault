@@ -1,0 +1,17 @@
+# Dockerfile.vault
+FROM golang:1.23 AS builder
+
+WORKDIR /build
+COPY vault-plugin-myengine/ ./
+RUN if [ ! -f go.mod ]; then go mod init local/vault-plugin-myengine; fi
+RUN go mod tidy && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o vault-plugin-myengine && \
+    chmod +x vault-plugin-myengine
+
+FROM hashicorp/vault:1.15.5
+
+# Copia o plugin já compilado para o local esperado
+COPY --from=builder /build/vault-plugin-myengine /etc/vault/plugins/vault-plugin-myengine
+
+# Apenas para garantir permissões (opcional)
+RUN chmod +x /etc/vault/plugins/vault-plugin-myengine
