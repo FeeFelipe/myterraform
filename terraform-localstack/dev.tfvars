@@ -15,3 +15,13 @@ default_tags = {
 
 bucket_name = "my-bucket"
 user_name   = "dev-user"
+
+s3_buckets = {
+  my-app-bucket = {}
+  logs-bucket = {
+    team = "platform"
+  }
+  media-bucket = {
+    purpose = "cdn"
+  }
+}

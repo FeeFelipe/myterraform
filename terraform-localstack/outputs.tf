@@ -1,5 +1,4 @@
 output "sqs_queue_urls" {
-  description = "URLs das filas SQS criadas"
   value = {
     for name, mod in module.sqs :
     name => mod.queue_url
@@ -7,6 +6,17 @@ output "sqs_queue_urls" {
 }
 
 output "local_metadata_file" {
-  description = "Nome do arquivo de metadados local"
-  value       = "${localmeta_bucket.example.bucket_name}.json"
+  value = "${localmeta_bucket.example.bucket_name}.json"
+}
+
+output "s3_bucket_names" {
+  description = "Nomes dos buckets S3 criados"
+  value = [for name, mod in module.s3 : mod.bucket_name]
+}
+
+output "s3_buckets" {
+  value = {
+    for name, mod in module.s3 :
+    name => mod.bucket_name
+  }
 }

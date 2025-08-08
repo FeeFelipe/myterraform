@@ -17,6 +17,13 @@ provider "localmeta" {
   output_dir = "./output"
 }
 
+module "s3" {
+  source      = "./modules/s3"
+  for_each    = var.s3_buckets
+  bucket_name = each.key
+  tags        = merge(var.default_tags, each.value)
+}
+
 module "sqs" {
   source     = "./modules/sqs"
   for_each   = var.sqs_queues
@@ -25,6 +32,6 @@ module "sqs" {
 }
 
 resource "localmeta_bucket" "example" {
-  bucket_name = var.bucket_name
+  bucket_name = "${var.bucket_name}-meta"
   tags        = var.default_tags
 }
