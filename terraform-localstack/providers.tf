@@ -1,7 +1,12 @@
+provider "vault" {
+  address = var.vault_addr
+  token   = var.vault_token
+}
+
 provider "aws" {
   region                      = var.region
-  access_key                  = "test"
-  secret_key                  = "test"
+  access_key                  = data.vault_generic_secret.myengine_creds.data["access_key"]
+  secret_key                  = data.vault_generic_secret.myengine_creds.data["secret_key"]
   skip_credentials_validation = true
   skip_metadata_api_check     = true
   s3_use_path_style           = true
@@ -15,4 +20,8 @@ provider "aws" {
   default_tags {
     tags = var.default_tags
   }
+}
+
+provider "localmeta" {
+  output_dir = "./output"
 }

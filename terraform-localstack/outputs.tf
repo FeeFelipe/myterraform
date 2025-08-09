@@ -10,7 +10,6 @@ output "local_metadata_file" {
 }
 
 output "s3_bucket_names" {
-  description = "Nomes dos buckets S3 criados"
   value = [for name, mod in module.s3 : mod.bucket_name]
 }
 
@@ -19,4 +18,13 @@ output "s3_buckets" {
     for name, mod in module.s3 :
     name => mod.bucket_name
   }
+}
+
+output "myengine_bucket_suffix" {
+  value = data.vault_generic_secret.myengine_config.data["bucket_suffix"]
+}
+
+output "myengine_access_key" {
+  value     = data.vault_generic_secret.myengine_creds.data["access_key"]
+  sensitive = true
 }

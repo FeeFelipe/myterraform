@@ -1,5 +1,11 @@
 terraform {
+  required_version = "= 1.9.5"
+
   required_providers {
+    vault = {
+      source  = "hashicorp/vault"
+      version = "~> 4.3"
+    }
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
@@ -9,12 +15,6 @@ terraform {
       version = "1.0.0"
     }
   }
-
-  required_version = ">= 1.5"
-}
-
-provider "localmeta" {
-  output_dir = "./output"
 }
 
 module "s3" {
@@ -29,9 +29,4 @@ module "sqs" {
   for_each   = var.sqs_queues
   queue_name = each.key
   tags       = merge(var.default_tags, each.value)
-}
-
-resource "localmeta_bucket" "example" {
-  bucket_name = "${var.bucket_name}-meta"
-  tags        = var.default_tags
 }
