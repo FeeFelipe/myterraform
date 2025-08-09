@@ -182,3 +182,52 @@ Editar
 docker compose down -v
 rm -rf localstack-data
 
+
+
+
+🔐 Vault Plugin – myengine
+O que é:
+Pense nele como um “mini-serviço” que roda dentro do Vault e sabe entregar segredos e configurações específicas para o nosso ambiente. É um secrets engine customizado, que nós mesmos construímos em Go, usando a API oficial da HashiCorp.
+
+O que ele faz:
+
+Armazena configurações seguras — por exemplo, um sufixo de bucket que será usado em todo o provisionamento.
+
+Gera credenciais sob demanda — como um endpoint que retorna chaves de acesso e segredo no estilo AWS, sem precisar gravar isso em código ou arquivos.
+
+Tudo isso seguindo o fluxo padrão do Vault: registro do plugin, habilitação no path /myengine, configuração via API, e leitura segura por qualquer aplicação ou automação.
+
+Por que é importante:
+
+Centraliza configurações e credenciais num único ponto confiável.
+
+Elimina hard-coding de segredos no Terraform, CI/CD ou código de aplicação.
+
+É extensível — podemos adicionar novos endpoints e lógicas no futuro.
+
+📦 Terraform Provider – localmeta
+O que é:
+É um provider Terraform que nós criamos para simular ou gerar artefatos de infraestrutura localmente, sem depender de uma nuvem real. Também foi escrito em Go, usando o Terraform Plugin SDK v2.
+
+O que ele faz:
+
+Cria recursos “locais” — por exemplo, um localmeta_bucket que não existe na AWS, mas gera um arquivo JSON com todos os metadados como se fosse um bucket real.
+
+O diretório de saída (output_dir) é definido na configuração e todos os arquivos são gerados lá.
+
+Perfeito para desenvolvimento, testes e demonstrações, onde queremos simular a infraestrutura antes de usar um provedor real.
+
+Por que é importante:
+
+Permite validar fluxos de provisionamento sem custos de cloud e sem depender de internet.
+
+Facilita a integração com outras ferramentas, pois os metadados ficam salvos em arquivos legíveis.
+
+Serve como “molde” para criar outros providers que interajam com APIs reais no futuro.
+
+🎯 Como eles trabalham juntos
+O Vault Plugin guarda, de forma segura, o bucket_suffix e credenciais necessárias.
+
+O Terraform Provider localmeta lê essas informações diretamente do Vault e gera os artefatos locais já com os valores corretos.
+
+O resultado é um fluxo de provisionamento que herda automaticamente as configurações seguras, sem precisar tocar no código do Terraform quando algo muda no Vault.

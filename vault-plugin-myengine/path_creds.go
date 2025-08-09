@@ -24,11 +24,8 @@ func pathCreds(b *myBackend) []*framework.Path {
 }
 
 func (b *myBackend) handleCredsRead(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
-	// Optional: ensure config exists (so users configured bucket_suffix first)
-	// It's OK if you don't want this guard—remove this block if unnecessary.
 	entry, _ := req.Storage.Get(ctx, configStorageKey)
 	if entry == nil {
-		// signal "not configured"
 		return &logical.Response{
 			Data: map[string]any{
 				"error": "myengine/config not set",
